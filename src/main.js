@@ -25,6 +25,11 @@ window.saveNomeLocal       = saveNomeLocal
 window.saveDeptLocal       = saveDeptLocal
 window.saveCelularLocal    = saveCelularLocal
 window.renderPainel        = renderPainel
+window.renderAdmPalpites   = renderAdmPalpites
+window.admAdicionarPalpite = admAdicionarPalpite
+window.admIniciarEdicao    = admIniciarEdicao
+window.admSalvarEdicao     = admSalvarEdicao
+window.admExcluirPalpite   = admExcluirPalpite
 
 const ADM_SENHA = 'generalcarros2026'
 let admLogado = false
@@ -663,11 +668,43 @@ async function renderAdmPalpites() {
     ])
     const dbMap = Object.fromEntries(dbJogos.map(j => [j.jogo_id, j]))
 
-    if (!palpites.length) { el.innerHTML = emptyHTML('📋', 'Nenhum palpite.'); return }
+    const jogoOpts = JOGOS_BRASIL.map(j =>
+      `<option value="${j.id}">${j.time1.nome} × ${j.time2.nome} (${j.data})</option>`
+    ).join('')
 
-    let html = `<div style="color:var(--text-dim);font-size:13px;margin-bottom:14px;">
-      ${palpites.length} palpite(s) · R$${palpites.length * 10},00 de premiação acumulada
-    </div><div style="display:grid;gap:8px;">`
+    let html = `
+      <div class="adm-game-row" style="margin-bottom:20px;">
+        <div style="font-weight:700;margin-bottom:12px;color:var(--gold);">➕ Adicionar Palpite Manual</div>
+        <div class="form-grid" style="margin-bottom:10px;">
+          <div class="form-group">
+            <label>Nome</label>
+            <input type="text" id="adm-add-nome" placeholder="Nome do funcionário" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label>Celular (11 dígitos)</label>
+            <input type="tel" id="adm-add-celular" placeholder="66999812901" maxlength="11" inputmode="numeric">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>Setor / Departamento</label>
+          <input type="text" id="adm-add-dept" placeholder="Ex: Vendas" autocomplete="off">
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label>Jogo</label>
+          <select id="adm-add-jogo">${jogoOpts}</select>
+        </div>
+        <div class="adm-score-row" style="margin-bottom:12px;">
+          <input type="number" id="adm-add-g1" value="0" min="0" max="30" style="width:70px;text-align:center;">
+          <span style="font-family:'Barlow Condensed';font-size:20px;color:var(--text-muted);">×</span>
+          <input type="number" id="adm-add-g2" value="0" min="0" max="30" style="width:70px;text-align:center;">
+        </div>
+        <button class="btn btn-green" onclick="admAdicionarPalpite()">➕ Adicionar Palpite</button>
+      </div>
+
+      <div style="color:var(--text-dim);font-size:13px;margin-bottom:12px;">
+        ${palpites.length} palpite(s) cadastrados · R$${palpites.length * 10},00 de premiação
+      </div>
+      <div style="display:grid;gap:8px;">`
 
     palpites.forEach(p => {
       const j   = JOGOS_BRASIL.find(x => x.id === p.jogo_id)
@@ -675,20 +712,108 @@ async function renderAdmPalpites() {
       const enc = db.status === 'encerrado'
       const pts = enc ? calcPontos(p.gols1, p.gols2, db.gols1, db.gols2) : null
 
-      html += `<div class="palpite-card">
-        <div class="palpite-user">${p.nome} <span style="font-size:11px;color:var(--text-muted);">${p.dept}</span></div>
+      html += `<div class="palpite-card" id="pcard-${p.id}" style="flex-wrap:wrap;gap:10px;">
+        <div class="palpite-user" style="min-width:120px;">
+          ${p.nome}<br>
+          <span style="font-size:11px;color:var(--text-muted);">${p.dept}</span><br>
+          <span style="font-size:11px;color:var(--text-muted);">📱 ${p.celular || '—'}</span>
+        </div>
         <div class="palpite-jogo">
           ${j ? `${j.time1.flag} ${j.time1.nome} × ${j.time2.nome} ${j.time2.flag}` : p.jogo_id}<br>
           <span style="font-size:11px;color:var(--text-muted);">${new Date(p.created_at).toLocaleString('pt-BR')}</span>
         </div>
-        <div class="palpite-result-display">${p.gols1} × ${p.gols2}</div>
+        <div id="pcard-score-${p.id}">
+          <div class="palpite-result-display">${p.gols1} × ${p.gols2}</div>
+        </div>
         ${pts !== null ? ptsBadge(pts) : '<span class="badge badge-dim">Pendente</span>'}
+        <div style="display:flex;gap:6px;margin-left:auto;align-items:center;">
+          <button class="btn btn-ghost" style="padding:6px 12px;font-size:13px;" onclick="admIniciarEdicao(${p.id},${p.gols1},${p.gols2})">✏️ Editar</button>
+          <button class="btn btn-danger" style="padding:6px 12px;font-size:13px;" onclick="admExcluirPalpite(${p.id},'${p.nome.replace(/'/g, "\\'")}')">🗑️</button>
+        </div>
       </div>`
     })
 
     el.innerHTML = html + '</div>'
   } catch (e) {
     el.innerHTML = emptyHTML('⚠️', e.message)
+  }
+}
+
+function admIniciarEdicao(id, g1, g2) {
+  document.getElementById(`pcard-score-${id}`).innerHTML = `
+    <div style="display:flex;align-items:center;gap:6px;">
+      <input type="number" id="edit-g1-${id}" value="${g1}" min="0" max="30"
+        style="width:54px;text-align:center;font-family:'Barlow Condensed';font-size:22px;font-weight:800;padding:4px;color:var(--gold);background:var(--surface);border:1px solid var(--gold);border-radius:6px;">
+      <span style="font-family:'Barlow Condensed';font-size:18px;color:var(--text-muted);">×</span>
+      <input type="number" id="edit-g2-${id}" value="${g2}" min="0" max="30"
+        style="width:54px;text-align:center;font-family:'Barlow Condensed';font-size:22px;font-weight:800;padding:4px;color:var(--gold);background:var(--surface);border:1px solid var(--gold);border-radius:6px;">
+      <button class="btn btn-green" style="padding:6px 10px;font-size:13px;" onclick="admSalvarEdicao(${id})">💾</button>
+      <button class="btn btn-ghost" style="padding:6px 10px;font-size:13px;" onclick="renderAdmPalpites()">✕</button>
+    </div>`
+}
+
+async function admSalvarEdicao(id) {
+  const g1 = parseInt(document.getElementById(`edit-g1-${id}`).value)
+  const g2 = parseInt(document.getElementById(`edit-g2-${id}`).value)
+  if (isNaN(g1) || isNaN(g2)) { toast('Placar inválido.', 'error'); return }
+  try {
+    await sb(`palpites?id=eq.${id}`, {
+      method: 'PATCH',
+      body: { gols1: g1, gols2: g2 },
+      prefer: 'return=minimal',
+    })
+    toast('✅ Palpite atualizado!', 'success')
+    await renderAdmPalpites()
+  } catch (e) {
+    toast('Erro: ' + e.message, 'error')
+  }
+}
+
+function admExcluirPalpite(id, nome) {
+  openModal(
+    'Excluir Palpite',
+    `Tem certeza que deseja excluir o palpite de <strong>${nome}</strong>?<br>Esta ação não pode ser desfeita.`,
+    async () => {
+      try {
+        await sb(`palpites?id=eq.${id}`, { method: 'DELETE', prefer: 'return=minimal' })
+        toast('Palpite excluído.', 'success')
+        await renderAdmPalpites()
+        await updateHeroStats()
+      } catch (e) {
+        toast('Erro ao excluir: ' + e.message, 'error')
+      }
+    }
+  )
+}
+
+async function admAdicionarPalpite() {
+  const nome    = document.getElementById('adm-add-nome').value.trim()
+  const celular = document.getElementById('adm-add-celular').value.replace(/\D/g, '')
+  const dept    = document.getElementById('adm-add-dept').value.trim()
+  const jogoId  = document.getElementById('adm-add-jogo').value
+  const g1      = parseInt(document.getElementById('adm-add-g1').value)
+  const g2      = parseInt(document.getElementById('adm-add-g2').value)
+
+  if (!nome) { toast('Informe o nome.', 'error'); return }
+  if (!/^\d{11}$/.test(celular)) { toast('Celular inválido — use 11 dígitos com DDD.', 'error'); return }
+  if (isNaN(g1) || isNaN(g2)) { toast('Placar inválido.', 'error'); return }
+
+  try {
+    await sb('palpites', {
+      method: 'POST',
+      body: { nome, celular, dept: dept || '—', jogo_id: jogoId, gols1: g1, gols2: g2 },
+      prefer: 'return=minimal',
+    })
+    toast('✅ Palpite adicionado!', 'success')
+    document.getElementById('adm-add-nome').value    = ''
+    document.getElementById('adm-add-celular').value = ''
+    document.getElementById('adm-add-dept').value    = ''
+    document.getElementById('adm-add-g1').value      = 0
+    document.getElementById('adm-add-g2').value      = 0
+    await renderAdmPalpites()
+    await updateHeroStats()
+  } catch (e) {
+    toast('Erro ao adicionar: ' + e.message, 'error')
   }
 }
 

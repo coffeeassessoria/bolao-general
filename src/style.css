@@ -290,39 +290,61 @@ select option { background: var(--surface); }
 .bottom-nav {
   display: none;
   position: fixed; bottom: 0; left: 0; right: 0;
-  height: var(--bnav-h);
+  /* altura + safe area para iphone com home bar */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   background: #0A1929;
   border-top: 1px solid var(--border);
   z-index: 200;
-  box-shadow: 0 -4px 20px rgba(0,0,0,.4);
+  box-shadow: 0 -4px 20px rgba(0,0,0,.5);
 }
 .bnav-btn {
   flex: 1;
   background: none; border: none;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 3px; padding: 6px 4px;
+  gap: 2px;
+  min-height: var(--bnav-h);
+  padding: 6px 2px;
   cursor: pointer;
   color: var(--text-muted);
-  transition: color .2s;
+  transition: color .15s;
   -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+/* indicador de aba ativa (linha no topo) */
+.bnav-btn.active::before {
+  content: '';
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 28px; height: 2px;
+  background: var(--gold);
+  border-radius: 0 0 3px 3px;
 }
 .bnav-btn.active { color: var(--gold); }
-.bnav-btn:active { opacity: .7; }
-.bnav-icon { font-size: 20px; line-height: 1; }
-.bnav-label { font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase; }
+.bnav-btn:active { opacity: .65; }
+/* pill ao redor do ícone ativo */
+.bnav-pill {
+  display: flex; align-items: center; justify-content: center;
+  width: 46px; height: 26px;
+  border-radius: 13px;
+  transition: background .15s;
+}
+.bnav-btn.active .bnav-pill { background: rgba(242,166,20,.15); }
+.bnav-icon  { font-size: 18px; line-height: 1; }
+.bnav-label { font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: .2px; text-transform: uppercase; white-space: nowrap; }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 600px) {
-  /* show bottom nav, hide top nav */
+  /* bottom nav visível, top nav oculto */
   .bottom-nav { display: flex; }
-  .top-nav { display: none; }
-  .header-logo { height: 34px; }
-  .logo-mark { font-size: 16px; }
-  .logo-sub { display: none; }
-  .db-status { font-size: 10px; }
+  .top-nav    { display: none; }
 
-  /* main gets padding for bottom nav */
-  main { padding: 16px 14px calc(var(--bnav-h) + 20px); }
+  /* header: logo menor, esconde db-status (erros aparecem como toast) */
+  .header-logo { height: 34px; }
+  .logo-mark   { font-size: 16px; }
+  .logo-sub    { display: none; }
+  .db-status   { display: none; }
+
+  /* main: padding inferior = nav + safe area do iPhone */
+  main { padding: 16px 14px calc(var(--bnav-h) + env(safe-area-inset-bottom, 0px) + 16px); }
 
   /* hero */
   .hero { padding: 20px 18px 18px; }
@@ -342,7 +364,7 @@ select option { background: var(--surface); }
   .palpitar-card { padding: 16px; }
   .form-grid { grid-template-columns: 1fr; }
 
-  /* score stepper mobile */
+  /* score stepper */
   .palpite-placar { padding: 14px 10px; gap: 6px; grid-template-columns: 1fr 30px 1fr; }
   .palpite-team-flag { font-size: 28px; }
   .palpite-team-label { font-size: 11px; }
@@ -356,18 +378,29 @@ select option { background: var(--surface); }
   .palpite-result-display { font-size: 22px; }
 
   /* ranking */
-  .ranking-row, .ranking-head { grid-template-columns: 32px 1fr 52px 60px; }
-  .ranking-row .ranking-col:last-child, .ranking-head span:last-child { display: none; }
+  .ranking-row { grid-template-columns: 32px 1fr 52px 60px; }
+  .ranking-row .ranking-col:last-child { display: none; }
 
-  /* modal */
-  .modal-overlay { padding: 12px; align-items: flex-end; }
-  .modal { border-radius: 16px 16px 0 0; max-width: 100%; padding: 24px 20px; }
-  .modal-actions { flex-direction: column-reverse; }
-  .modal-actions .btn { width: 100%; padding: 13px; }
+  /* modal → bottom sheet */
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal {
+    border-radius: 20px 20px 0 0; max-width: 100%; width: 100%;
+    padding: 24px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  }
+  .modal-actions { flex-direction: column-reverse; gap: 8px; }
+  .modal-actions .btn { width: 100%; padding: 14px; }
 
-  /* toast acima do bottom nav */
-  #toast { bottom: calc(var(--bnav-h) + 12px); right: 14px; left: 14px; max-width: none; text-align: center; transform: translateY(160%); }
+  /* toast acima do bottom nav + safe area */
+  #toast {
+    bottom: calc(var(--bnav-h) + env(safe-area-inset-bottom, 0px) + 10px);
+    right: 14px; left: 14px; max-width: none; text-align: center;
+    transform: translateY(200%);
+  }
   #toast.show { transform: translateY(0); }
+
+  /* bolão cards */
+  .bolao-card { padding: 14px 14px; }
+  .bolao-teams { font-size: 15px; }
 
   /* section title */
   .section-title { font-size: 17px; }

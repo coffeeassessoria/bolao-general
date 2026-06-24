@@ -332,14 +332,6 @@ select option { background: var(--surface); }
   -webkit-tap-highlight-color: transparent;
   position: relative;
 }
-/* indicador de aba ativa (linha no topo) */
-.bnav-btn.active::before {
-  content: '';
-  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-  width: 32px; height: 3px;
-  background: var(--green-bright);
-  border-radius: 0 0 4px 4px;
-}
 .bnav-btn.active { color: var(--green-bright); }
 .bnav-btn:active { opacity: .65; }
 /* pill ao redor do ícone ativo */

@@ -23,6 +23,8 @@ window.closeModal          = closeModal
 window.adjustScore         = adjustScore
 window.saveNomeLocal       = saveNomeLocal
 window.saveDeptLocal       = saveDeptLocal
+window.saveCelularLocal    = saveCelularLocal
+window.renderPainel        = renderPainel
 
 const ADM_SENHA = 'generalcarros2026'
 let admLogado = false
@@ -64,9 +66,9 @@ function goPage(id) {
   )
 
   if (id === 'tabela')   { renderTabela(); renderGrupo(); updateHeroStats() }
-  if (id === 'palpitar') { renderPalpitarSelect(); preencherNomeSalvo() }
+  if (id === 'palpitar') { renderPalpitarSelect(); preencherDadosSalvos() }
   if (id === 'ranking')  renderRanking()
-  if (id === 'meus')     { document.getElementById('meus-palpites-list').innerHTML = ''; preencherFiltroNome() }
+  if (id === 'meus')     { renderPainel(); preencherFiltroCelular() }
   if (id === 'adm' && admLogado) renderAdmPanel()
 
   // scroll to top on page change
@@ -81,7 +83,7 @@ function adjustScore(inputId, delta) {
   el.value = next
 }
 
-// ═══════════════ LOCALSTORAGE (nome / dept) ═══════════════
+// ═══════════════ LOCALSTORAGE ═══════════════
 function saveNomeLocal() {
   const v = document.getElementById('p-nome').value
   if (v.trim()) localStorage.setItem('bolao_nome', v.trim())
@@ -90,20 +92,27 @@ function saveDeptLocal() {
   const v = document.getElementById('p-dept').value
   if (v.trim()) localStorage.setItem('bolao_dept', v.trim())
 }
-
-function preencherNomeSalvo() {
-  const nome = localStorage.getItem('bolao_nome')
-  const dept = localStorage.getItem('bolao_dept')
-  const elNome = document.getElementById('p-nome')
-  const elDept = document.getElementById('p-dept')
-  if (nome && !elNome.value) elNome.value = nome
-  if (dept && !elDept.value) elDept.value = dept
+function saveCelularLocal() {
+  const v = document.getElementById('p-celular').value.replace(/\D/g, '')
+  if (v.length === 11) localStorage.setItem('bolao_celular', v)
 }
 
-function preencherFiltroNome() {
-  const nome = localStorage.getItem('bolao_nome')
-  const el   = document.getElementById('filtro-nome')
-  if (nome && !el.value) el.value = nome
+function preencherDadosSalvos() {
+  const nome    = localStorage.getItem('bolao_nome')
+  const dept    = localStorage.getItem('bolao_dept')
+  const celular = localStorage.getItem('bolao_celular')
+  const elNome    = document.getElementById('p-nome')
+  const elDept    = document.getElementById('p-dept')
+  const elCelular = document.getElementById('p-celular')
+  if (nome    && !elNome.value)    elNome.value    = nome
+  if (dept    && !elDept.value)    elDept.value    = dept
+  if (celular && !elCelular.value) elCelular.value = celular
+}
+
+function preencherFiltroCelular() {
+  const celular = localStorage.getItem('bolao_celular')
+  const el      = document.getElementById('filtro-celular')
+  if (celular && !el.value) el.value = celular
 }
 
 // ═══════════════ HERO STATS ═══════════════
@@ -230,32 +239,38 @@ function updatePalpiteLabels() {
 }
 
 async function salvarPalpite() {
-  const nome   = document.getElementById('p-nome').value.trim()
-  const dept   = document.getElementById('p-dept').value.trim()
-  const jogoId = document.getElementById('p-jogo').value
-  const g1     = parseInt(document.getElementById('p-gols1').value)
-  const g2     = parseInt(document.getElementById('p-gols2').value)
+  const nome    = document.getElementById('p-nome').value.trim()
+  const celular = document.getElementById('p-celular').value.replace(/\D/g, '')
+  const dept    = document.getElementById('p-dept').value.trim()
+  const jogoId  = document.getElementById('p-jogo').value
+  const g1      = parseInt(document.getElementById('p-gols1').value)
+  const g2      = parseInt(document.getElementById('p-gols2').value)
 
-  if (!nome)              { toast('Informe seu nome.', 'error'); return }
+  if (!nome) { toast('Informe seu nome.', 'error'); return }
+  if (!/^\d{11}$/.test(celular)) {
+    toast('Celular inválido. Use DDD + 9 dígitos, ex: 66999812901', 'error'); return
+  }
   if (!jogoId || jogoId === 'Carregando…' || jogoId === 'Nenhum jogo disponível') {
     toast('Selecione um jogo.', 'error'); return
   }
   if (isNaN(g1) || isNaN(g2)) { toast('Preencha o placar.', 'error'); return }
 
-  // Checar status no banco
   const [dbJogo] = await sb(`jogos?jogo_id=eq.${jogoId}&select=status`)
   if (dbJogo?.status === 'encerrado') { toast('Jogo já encerrado.', 'error'); return }
 
-  const j          = JOGOS_BRASIL.find(x => x.id === jogoId)
-  const anteriores = await sb(`palpites?nome=ilike.${encodeURIComponent(nome)}&jogo_id=eq.${jogoId}&select=id`)
-  const jaExiste   = anteriores.length > 0
+  const j = JOGOS_BRASIL.find(x => x.id === jogoId)
 
-  const todosAntes = await sb(`palpites?nome=ilike.${encodeURIComponent(nome)}&select=id`)
-  const qtd        = todosAntes.length
-  const valor      = (qtd + 1) * 10
+  // usa celular como chave para contar palpites deste participante
+  const [anterioresJogo, todosAntes] = await Promise.all([
+    sb(`palpites?celular=eq.${celular}&jogo_id=eq.${jogoId}&select=id`),
+    sb(`palpites?celular=eq.${celular}&select=id`),
+  ])
+  const jaExiste = anterioresJogo.length > 0
+  const qtd      = todosAntes.length
+  const valor    = (qtd + 1) * 10
 
   const avisoExtra = jaExiste
-    ? `<br><br>⚠️ Você já tem um palpite para este jogo. Um novo palpite será adicionado.`
+    ? `<br><br>⚠️ Você já tem um palpite para este jogo. Um novo será adicionado.`
     : ''
 
   openModal(
@@ -271,11 +286,11 @@ async function salvarPalpite() {
       try {
         await sb('palpites', {
           method: 'POST',
-          body: { nome, dept: dept || '—', jogo_id: jogoId, gols1: g1, gols2: g2 },
+          body: { nome, celular, dept: dept || '—', jogo_id: jogoId, gols1: g1, gols2: g2 },
           prefer: 'return=minimal',
         })
-        // persiste nome/dept localmente para próximas visitas
         localStorage.setItem('bolao_nome', nome)
+        localStorage.setItem('bolao_celular', celular)
         if (dept) localStorage.setItem('bolao_dept', dept)
 
         toast('✅ Palpite salvo!', 'success')
@@ -291,59 +306,109 @@ async function salvarPalpite() {
   )
 }
 
-// ═══════════════ MEUS PALPITES ═══════════════
-async function filtrarPalpites() {
-  const nome = document.getElementById('filtro-nome').value.trim()
-  if (!nome) { toast('Digite seu nome.', 'error'); return }
-
+// ═══════════════ PAINEL (todos os palpites) ═══════════════
+async function renderPainel() {
   const el = document.getElementById('meus-palpites-list')
-  el.innerHTML = loadingHTML('Buscando…')
-
+  el.innerHTML = loadingHTML('Carregando painel…')
   try {
     const [palpites, dbJogos] = await Promise.all([
-      // ilike = case-insensitive, sem wildcards faz match exato
-      sb(`palpites?nome=ilike.${encodeURIComponent(nome)}&order=created_at.asc`),
+      sb('palpites?order=created_at.desc'),
       sb('jogos?select=jogo_id,status,gols1,gols2'),
     ])
     const dbMap = Object.fromEntries(dbJogos.map(j => [j.jogo_id, j]))
 
     if (!palpites.length) {
-      el.innerHTML = emptyHTML('🔍', `Nenhum palpite para "<strong>${nome}</strong>".`)
+      el.innerHTML = emptyHTML('📋', 'Nenhum palpite registrado ainda.')
       return
     }
 
-    // persiste nome para reuso
-    localStorage.setItem('bolao_nome', palpites[0].nome)
-
-    let totalPts = 0
-    let html = `<div style="margin-bottom:12px;color:var(--text-dim);font-size:13px;">
-      ${palpites.length} palpite(s) · investimento: <strong style="color:var(--gold);">R$${palpites.length * 10},00</strong>
+    let html = `<div class="painel-total">
+      ${palpites.length} palpite${palpites.length > 1 ? 's' : ''} registrado${palpites.length > 1 ? 's' : ''}
     </div><div style="display:grid;gap:8px;">`
 
     palpites.forEach(p => {
       const j   = JOGOS_BRASIL.find(x => x.id === p.jogo_id)
       const db  = dbMap[p.jogo_id] || {}
       const enc = db.status === 'encerrado'
-      let ptsHtml = `<span class="badge badge-dim">Aguardando</span>`
-
+      let statusHtml = `<span class="badge badge-dim">Aguardando</span>`
       if (enc) {
-        const pts = calcPontos(p.gols1, p.gols2, db.gols1, db.gols2)
-        totalPts += pts
-        ptsHtml   = ptsBadge(pts)
+        const exato = p.gols1 === db.gols1 && p.gols2 === db.gols2
+        statusHtml = exato
+          ? `<span class="badge badge-gold">🏆 Acertou!</span>`
+          : `<span class="badge" style="background:rgba(192,57,43,.12);color:#e74c3c;">Errou</span>`
       }
 
-      html += `<div class="palpite-card">
-        <div class="palpite-jogo">
-          ${j ? `${j.time1.flag} ${j.time1.nome} × ${j.time2.nome} ${j.time2.flag}` : p.jogo_id}<br>
-          <span style="font-size:11px;color:var(--text-muted);">${j ? `${j.data} · ${j.fase}` : ''}</span>
+      html += `<div class="painel-card">
+        <div class="painel-card-info">
+          <div class="painel-card-nome">${p.nome}</div>
+          <div class="painel-card-meta">${p.dept} · ${j ? `${j.time1.flag} ${j.time1.nome} × ${j.time2.nome} ${j.time2.flag}` : p.jogo_id}</div>
         </div>
-        <div class="palpite-result-display">${p.gols1} × ${p.gols2}</div>
-        ${ptsHtml}
+        <div class="painel-card-right">
+          <div class="painel-card-score">${p.gols1} × ${p.gols2}</div>
+          ${statusHtml}
+        </div>
       </div>`
     })
+    el.innerHTML = html + '</div>'
+  } catch (e) {
+    el.innerHTML = emptyHTML('⚠️', e.message)
+  }
+}
 
-    html += `</div><div class="info-box" style="margin-top:14px;">Total acumulado: <strong>${totalPts} pts</strong></div>`
-    el.innerHTML = html
+// ═══════════════ MEUS PALPITES (filtro por celular) ═══════════════
+async function filtrarPalpites() {
+  const celular = document.getElementById('filtro-celular').value.replace(/\D/g, '')
+  if (!/^\d{11}$/.test(celular)) {
+    toast('Digite o celular com DDD (11 dígitos), ex: 66999812901', 'error'); return
+  }
+
+  const el = document.getElementById('meus-palpites-list')
+  el.innerHTML = loadingHTML('Buscando seus palpites…')
+
+  try {
+    const [palpites, dbJogos] = await Promise.all([
+      sb(`palpites?celular=eq.${celular}&order=created_at.asc`),
+      sb('jogos?select=jogo_id,status,gols1,gols2'),
+    ])
+    const dbMap = Object.fromEntries(dbJogos.map(j => [j.jogo_id, j]))
+
+    if (!palpites.length) {
+      el.innerHTML = emptyHTML('🔍', 'Nenhum palpite encontrado para este celular.')
+      return
+    }
+
+    localStorage.setItem('bolao_celular', celular)
+    if (palpites[0].nome) localStorage.setItem('bolao_nome', palpites[0].nome)
+
+    let html = `<div class="painel-total">
+      <strong>${palpites[0].nome}</strong> · ${palpites.length} palpite${palpites.length > 1 ? 's' : ''}
+      · <span style="color:var(--gold);">R$${palpites.length * 10},00 investido${palpites.length > 1 ? 's' : ''}</span>
+    </div><div style="display:grid;gap:8px;">`
+
+    palpites.forEach(p => {
+      const j   = JOGOS_BRASIL.find(x => x.id === p.jogo_id)
+      const db  = dbMap[p.jogo_id] || {}
+      const enc = db.status === 'encerrado'
+      let statusHtml = `<span class="badge badge-dim">Aguardando</span>`
+      if (enc) {
+        const exato = p.gols1 === db.gols1 && p.gols2 === db.gols2
+        statusHtml = exato
+          ? `<span class="badge badge-gold">🏆 Acertou!</span>`
+          : `<span class="badge" style="background:rgba(192,57,43,.12);color:#e74c3c;">Errou</span>`
+      }
+
+      html += `<div class="painel-card">
+        <div class="painel-card-info">
+          <div class="painel-card-nome">${j ? `${j.time1.flag} ${j.time1.nome} × ${j.time2.nome} ${j.time2.flag}` : p.jogo_id}</div>
+          <div class="painel-card-meta">${j ? `${j.data} · ${j.fase}` : ''}</div>
+        </div>
+        <div class="painel-card-right">
+          <div class="painel-card-score">${p.gols1} × ${p.gols2}</div>
+          ${statusHtml}
+        </div>
+      </div>`
+    })
+    el.innerHTML = html + '</div>'
   } catch (e) {
     el.innerHTML = emptyHTML('⚠️', e.message)
   }

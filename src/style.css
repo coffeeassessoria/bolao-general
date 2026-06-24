@@ -241,6 +241,28 @@ select option { background: var(--surface); }
 .bolao-no-winner  { font-size: 13px; color: var(--text-muted); font-style: italic; padding: 4px 0; }
 .bolao-pending-msg{ font-size: 13px; color: var(--text-dim); padding: 4px 0; }
 
+/* ── PAINEL DE PALPITES ── */
+.painel-filter-bar {
+  display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap;
+}
+.painel-filter-bar input {
+  flex: 1; min-width: 0;
+}
+.painel-filter-btns { display: flex; gap: 6px; flex-shrink: 0; }
+.painel-total {
+  font-size: 13px; color: var(--text-dim); margin-bottom: 12px; padding: 10px 14px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+.painel-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+}
+.painel-card-info { flex: 1; min-width: 0; }
+.painel-card-nome { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.painel-card-meta { font-size: 12px; color: var(--text-dim); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.painel-card-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.painel-card-score { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 800; color: var(--gold); letter-spacing: 3px; line-height: 1; }
+
 /* ── WINNER ── */
 .winner-banner { background: linear-gradient(135deg, #0A2010 0%, #071525 100%); border: 2px solid var(--gold); border-radius: 16px; padding: 32px; text-align: center; margin-top: 20px; }
 .winner-banner-icon { font-size: 72px; display: block; margin-bottom: 12px; }

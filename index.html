@@ -26,7 +26,7 @@
     <nav class="top-nav">
       <button class="active" onclick="goPage('tabela')">Tabela</button>
       <button onclick="goPage('palpitar')">Palpitar</button>
-      <button onclick="goPage('meus')">Meus Palpites</button>
+      <button onclick="goPage('meus')">Painel</button>
       <button onclick="goPage('ranking')">Bolões</button>
       <button onclick="goPage('adm')">ADM</button>
     </nav>
@@ -72,10 +72,15 @@
               oninput="saveNomeLocal()">
           </div>
           <div class="form-group">
-            <label>Setor / Departamento</label>
-            <input type="text" id="p-dept" placeholder="Ex: Vendas" autocomplete="off"
-              oninput="saveDeptLocal()">
+            <label>WhatsApp com DDD</label>
+            <input type="tel" id="p-celular" placeholder="Ex: 66999812901" maxlength="11"
+              inputmode="numeric" autocomplete="tel" oninput="saveCelularLocal()">
           </div>
+        </div>
+        <div class="form-group">
+          <label>Setor / Departamento</label>
+          <input type="text" id="p-dept" placeholder="Ex: Vendas" autocomplete="off"
+            oninput="saveDeptLocal()">
         </div>
         <div class="form-group">
           <label>Jogo</label>
@@ -114,17 +119,16 @@
     </div>
   </div>
 
-  <!-- MEUS PALPITES -->
+  <!-- PAINEL -->
   <div id="page-meus" class="page">
-    <div class="section-title">Meus Palpites</div>
-    <div class="card" style="max-width:420px;margin-bottom:20px;">
-      <div class="form-group">
-        <label>Seu Nome</label>
-        <div style="display:flex;gap:8px;">
-          <input type="text" id="filtro-nome" placeholder="Digite seu nome"
-            onkeydown="if(event.key==='Enter')filtrarPalpites()">
-          <button class="btn btn-ghost" onclick="filtrarPalpites()">Buscar</button>
-        </div>
+    <div class="section-title">Painel de Palpites</div>
+    <div class="painel-filter-bar">
+      <input type="tel" id="filtro-celular" placeholder="Celular com DDD para ver os seus"
+        maxlength="11" inputmode="numeric"
+        onkeydown="if(event.key==='Enter')filtrarPalpites()">
+      <div class="painel-filter-btns">
+        <button class="btn btn-primary" onclick="filtrarPalpites()">Meus</button>
+        <button class="btn btn-ghost" onclick="renderPainel()">Todos</button>
       </div>
     </div>
     <div id="meus-palpites-list"></div>
@@ -175,8 +179,8 @@
     <span class="bnav-label">Palpitar</span>
   </button>
   <button class="bnav-btn" data-page="meus" onclick="goPage('meus')">
-    <span class="bnav-pill"><span class="bnav-icon">📋</span></span>
-    <span class="bnav-label">Meus</span>
+    <span class="bnav-pill"><span class="bnav-icon">📊</span></span>
+    <span class="bnav-label">Painel</span>
   </button>
   <button class="bnav-btn" data-page="ranking" onclick="goPage('ranking')">
     <span class="bnav-pill"><span class="bnav-icon">🏆</span></span>

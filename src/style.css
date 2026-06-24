@@ -28,8 +28,10 @@ header {
   box-shadow: 0 4px 24px rgba(0,0,0,.5);
 }
 .header-inner { max-width: 1000px; margin: 0 auto; display: flex; align-items: center; gap: 16px; height: 62px; }
-.logo-mark { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 21px; color: var(--gold); white-space: nowrap; }
-.logo-sub { font-size: 11px; font-weight: 500; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; border-left: 1px solid var(--border); padding-left: 14px; }
+.logo-area { display: flex; align-items: center; gap: 10px; }
+.header-logo { height: 42px; width: auto; mix-blend-mode: screen; flex-shrink: 0; }
+.logo-mark { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 21px; color: var(--gold); white-space: nowrap; line-height: 1.1; }
+.logo-sub { font-size: 10px; font-weight: 500; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; }
 .db-status { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-muted); }
 .db-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); transition: background .3s; }
 .db-dot.ok  { background: var(--green-bright); }
@@ -286,6 +288,8 @@ select option { background: var(--surface); }
   /* show bottom nav, hide top nav */
   .bottom-nav { display: flex; }
   .top-nav { display: none; }
+  .header-logo { height: 34px; }
+  .logo-mark { font-size: 16px; }
   .logo-sub { display: none; }
   .db-status { font-size: 10px; }
 

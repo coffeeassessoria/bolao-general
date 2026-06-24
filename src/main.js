@@ -32,6 +32,8 @@ window.admSalvarEdicao     = admSalvarEdicao
 window.admExcluirPalpite   = admExcluirPalpite
 window.admTogglePago       = admTogglePago
 window.copiarPix           = copiarPix
+window.openMenu            = openMenu
+window.closeMenu           = closeMenu
 
 const ADM_SENHA = 'generalcarros2026'
 let admLogado = false
@@ -58,19 +60,34 @@ async function initApp() {
   await Promise.all([renderTabela(), renderGrupo(), updateHeroStats()])
 }
 
+// ═══════════════ MENU HAMBÚRGUER ═══════════════
+function openMenu() {
+  document.getElementById('drawer').classList.add('open')
+  document.getElementById('drawer-overlay').classList.add('open')
+  document.body.style.overflow = 'hidden'
+}
+
+function closeMenu() {
+  document.getElementById('drawer').classList.remove('open')
+  document.getElementById('drawer-overlay').classList.remove('open')
+  document.body.style.overflow = ''
+}
+
 // ═══════════════ NAVEGAÇÃO ═══════════════
 function goPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
   document.getElementById('page-' + id).classList.add('active')
 
-  // top nav
+  // top nav (desktop)
   document.querySelectorAll('.top-nav button').forEach(b =>
     b.classList.toggle('active', b.getAttribute('onclick')?.includes(`'${id}'`))
   )
-  // bottom nav
-  document.querySelectorAll('.bnav-btn').forEach(b =>
+  // drawer nav (mobile)
+  document.querySelectorAll('.drawer-item').forEach(b =>
     b.classList.toggle('active', b.dataset.page === id)
   )
+
+  closeMenu()
 
   if (id === 'tabela')   { renderTabela(); renderGrupo(); updateHeroStats() }
   if (id === 'palpitar') { renderPalpitarSelect(); preencherDadosSalvos() }
@@ -78,7 +95,6 @@ function goPage(id) {
   if (id === 'meus')     { renderPainel(); preencherFiltroCelular() }
   if (id === 'adm' && admLogado) renderAdmPanel()
 
-  // scroll to top on page change
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 

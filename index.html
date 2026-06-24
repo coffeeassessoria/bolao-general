@@ -30,8 +30,41 @@
       <button onclick="goPage('ranking')">Bolões</button>
       <button onclick="goPage('adm')">ADM</button>
     </nav>
+    <button class="hamburger-btn" id="hamburger-btn" onclick="openMenu()" aria-label="Abrir menu">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </header>
+
+<!-- DRAWER OVERLAY -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeMenu()"></div>
+
+<!-- DRAWER LATERAL (mobile) -->
+<nav class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-brand">
+      <span style="color:var(--gold);font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;">Bolão 2026 🇧🇷</span>
+    </div>
+    <button class="drawer-close" onclick="closeMenu()" aria-label="Fechar menu">✕</button>
+  </div>
+  <div class="drawer-nav">
+    <button class="drawer-item active" data-page="tabela" onclick="goPage('tabela')">
+      <span class="drawer-icon">⚽</span><span class="drawer-label">Tabela</span>
+    </button>
+    <button class="drawer-item" data-page="palpitar" onclick="goPage('palpitar')">
+      <span class="drawer-icon">✏️</span><span class="drawer-label">Palpitar</span>
+    </button>
+    <button class="drawer-item" data-page="meus" onclick="goPage('meus')">
+      <span class="drawer-icon">📊</span><span class="drawer-label">Painel</span>
+    </button>
+    <button class="drawer-item" data-page="ranking" onclick="goPage('ranking')">
+      <span class="drawer-icon">🏆</span><span class="drawer-label">Bolões</span>
+    </button>
+    <button class="drawer-item" data-page="adm" onclick="goPage('adm')">
+      <span class="drawer-icon">⚙️</span><span class="drawer-label">ADM</span>
+    </button>
+  </div>
+</nav>
 
 <main>
 
@@ -174,29 +207,6 @@
 
 </main>
 
-<!-- NAV INFERIOR (mobile) -->
-<nav class="bottom-nav" id="bottom-nav">
-  <button class="bnav-btn active" data-page="tabela" onclick="goPage('tabela')">
-    <span class="bnav-pill"><span class="bnav-icon">⚽</span></span>
-    <span class="bnav-label">Tabela</span>
-  </button>
-  <button class="bnav-btn" data-page="palpitar" onclick="goPage('palpitar')">
-    <span class="bnav-pill"><span class="bnav-icon">✏️</span></span>
-    <span class="bnav-label">Palpitar</span>
-  </button>
-  <button class="bnav-btn" data-page="meus" onclick="goPage('meus')">
-    <span class="bnav-pill"><span class="bnav-icon">📊</span></span>
-    <span class="bnav-label">Painel</span>
-  </button>
-  <button class="bnav-btn" data-page="ranking" onclick="goPage('ranking')">
-    <span class="bnav-pill"><span class="bnav-icon">🏆</span></span>
-    <span class="bnav-label">Bolões</span>
-  </button>
-  <button class="bnav-btn" data-page="adm" onclick="goPage('adm')">
-    <span class="bnav-pill"><span class="bnav-icon">⚙️</span></span>
-    <span class="bnav-label">ADM</span>
-  </button>
-</nav>
 
 <div id="toast"></div>
 

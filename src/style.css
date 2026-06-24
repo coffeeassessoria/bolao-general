@@ -300,6 +300,19 @@ select option { background: var(--surface); }
 .info-box { background: rgba(242,166,20,.07); border: 1px solid rgba(242,166,20,.2); border-radius: var(--radius-sm); padding: 13px 15px; font-size: 13px; color: var(--text-dim); line-height: 1.6; }
 .info-box strong { color: var(--gold); }
 
+/* ── PIX BOX ── */
+.pix-box {
+  background: rgba(37,176,86,.06);
+  border: 1px dashed rgba(37,176,86,.4);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  text-align: center;
+}
+.pix-box-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin-bottom: 8px; }
+.pix-box-key   { font-size: 14px; font-weight: 700; color: var(--green-bright); margin-bottom: 10px; letter-spacing: .3px; word-break: break-all; }
+.pix-copy-btn  { font-size: 12px !important; padding: 6px 14px !important; }
+.pix-box-hint  { font-size: 11px; color: var(--text-muted); margin-top: 8px; }
+
 .tabs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
 .tab-btn { padding: 7px 15px; border-radius: 6px; border: 1px solid var(--border); background: none; color: var(--text-dim); font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .2s; }
 .tab-btn.active { background: var(--gold); color: #07111F; border-color: var(--gold); font-weight: 700; }

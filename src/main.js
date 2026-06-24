@@ -30,6 +30,8 @@ window.admAdicionarPalpite = admAdicionarPalpite
 window.admIniciarEdicao    = admIniciarEdicao
 window.admSalvarEdicao     = admSalvarEdicao
 window.admExcluirPalpite   = admExcluirPalpite
+window.admTogglePago       = admTogglePago
+window.copiarPix           = copiarPix
 
 const ADM_SENHA = 'generalcarros2026'
 let admLogado = false
@@ -112,6 +114,12 @@ function preencherDadosSalvos() {
   if (nome    && !elNome.value)    elNome.value    = nome
   if (dept    && !elDept.value)    elDept.value    = dept
   if (celular && !elCelular.value) elCelular.value = celular
+}
+
+function copiarPix() {
+  navigator.clipboard.writeText('contato@coffeeassessoria.com.br')
+    .then(() => toast('✅ Chave PIX copiada!', 'success'))
+    .catch(() => toast('contato@coffeeassessoria.com.br', ''))
 }
 
 function preencherFiltroCelular() {
@@ -402,6 +410,10 @@ async function filtrarPalpites() {
           : `<span class="badge" style="background:rgba(192,57,43,.12);color:#e74c3c;">Errou</span>`
       }
 
+      const pagoHtml = p.pago
+        ? `<span class="badge badge-green" style="font-size:9px;">✅ PIX Recebido</span>`
+        : `<span class="badge" style="background:rgba(192,57,43,.1);color:#e74c3c;font-size:9px;">💸 PIX Pendente</span>`
+
       html += `<div class="painel-card">
         <div class="painel-card-info">
           <div class="painel-card-nome">${j ? `${j.time1.flag} ${j.time1.nome} × ${j.time2.nome} ${j.time2.flag}` : p.jogo_id}</div>
@@ -410,6 +422,7 @@ async function filtrarPalpites() {
         <div class="painel-card-right">
           <div class="painel-card-score">${p.gols1} × ${p.gols2}</div>
           ${statusHtml}
+          ${pagoHtml}
         </div>
       </div>`
     })
@@ -726,8 +739,10 @@ async function renderAdmPalpites() {
           <div class="palpite-result-display">${p.gols1} × ${p.gols2}</div>
         </div>
         ${pts !== null ? ptsBadge(pts) : '<span class="badge badge-dim">Pendente</span>'}
-        <div style="display:flex;gap:6px;margin-left:auto;align-items:center;">
-          <button class="btn btn-ghost" style="padding:6px 12px;font-size:13px;" onclick="admIniciarEdicao(${p.id},${p.gols1},${p.gols2})">✏️ Editar</button>
+        <div style="display:flex;gap:6px;margin-left:auto;align-items:center;flex-wrap:wrap;">
+          <button class="btn ${p.pago ? 'btn-green' : 'btn-ghost'}" style="padding:6px 12px;font-size:12px;"
+            onclick="admTogglePago(${p.id},${!!p.pago})">${p.pago ? '✅ Pago' : '💸 Pago?'}</button>
+          <button class="btn btn-ghost" style="padding:6px 12px;font-size:13px;" onclick="admIniciarEdicao(${p.id},${p.gols1},${p.gols2})">✏️</button>
           <button class="btn btn-danger" style="padding:6px 12px;font-size:13px;" onclick="admExcluirPalpite(${p.id},'${p.nome.replace(/'/g, "\\'")}')">🗑️</button>
         </div>
       </div>`
@@ -784,6 +799,20 @@ function admExcluirPalpite(id, nome) {
       }
     }
   )
+}
+
+async function admTogglePago(id, pago) {
+  try {
+    await sb(`palpites?id=eq.${id}`, {
+      method: 'PATCH',
+      body: { pago: !pago },
+      prefer: 'return=minimal',
+    })
+    toast(!pago ? '✅ Pagamento confirmado!' : 'Pagamento desmarcado.', !pago ? 'success' : '')
+    await renderAdmPalpites()
+  } catch (e) {
+    toast('Erro: ' + e.message, 'error')
+  }
 }
 
 async function admAdicionarPalpite() {

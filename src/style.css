@@ -336,11 +336,11 @@ select option { background: var(--surface); }
 .bnav-btn.active::before {
   content: '';
   position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-  width: 28px; height: 2px;
-  background: var(--gold);
-  border-radius: 0 0 3px 3px;
+  width: 32px; height: 3px;
+  background: var(--green-bright);
+  border-radius: 0 0 4px 4px;
 }
-.bnav-btn.active { color: var(--gold); }
+.bnav-btn.active { color: var(--green-bright); }
 .bnav-btn:active { opacity: .65; }
 /* pill ao redor do ícone ativo */
 .bnav-pill {
@@ -349,7 +349,7 @@ select option { background: var(--surface); }
   border-radius: 13px;
   transition: background .15s;
 }
-.bnav-btn.active .bnav-pill { background: rgba(242,166,20,.15); }
+.bnav-btn.active .bnav-pill { background: rgba(37,176,86,.15); }
 .bnav-icon  { font-size: 18px; line-height: 1; }
 .bnav-label { font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: .2px; text-transform: uppercase; white-space: nowrap; }
 

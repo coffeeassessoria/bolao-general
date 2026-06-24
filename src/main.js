@@ -349,101 +349,93 @@ async function filtrarPalpites() {
   }
 }
 
-// ═══════════════ RANKING ═══════════════
+// ═══════════════ BOLÕES & RESULTADOS ═══════════════
 async function renderRanking() {
-  const el      = document.getElementById('ranking-list')
-  const prizeEl = document.getElementById('ranking-prize')
-  el.innerHTML = loadingHTML('Calculando ranking…')
-  prizeEl.innerHTML = ''
+  const el = document.getElementById('ranking-list')
+  const ws = document.getElementById('winner-section')
+  el.innerHTML = loadingHTML('Carregando bolões…')
+  ws.innerHTML = ''
 
   try {
     const [palpites, dbJogos] = await Promise.all([
       sb('palpites?order=created_at.asc'),
-      sb('jogos?select=jogo_id,status,gols1,gols2'),
+      sb('jogos?select=jogo_id,status,gols1,gols2&order=id'),
     ])
     const dbMap = Object.fromEntries(dbJogos.map(j => [j.jogo_id, j]))
 
-    const totalPot       = palpites.length * 10
-    const jogosEncerrados = dbJogos.filter(j => j.status === 'encerrado').length
-    const totalJogos      = JOGOS_BRASIL.length
+    // historico de acertos por pessoa (apenas para a seção de histórico)
+    const acertosMap = {}
 
-    const map = {}
-    palpites.forEach(p => {
-      const key = p.nome.toLowerCase()
-      if (!map[key]) map[key] = { nome: p.nome, dept: p.dept, total: 0, palpites: 0, exatos: 0 }
-      map[key].palpites++
-      const db = dbMap[p.jogo_id]
-      if (db?.status === 'encerrado') {
-        const pts = calcPontos(p.gols1, p.gols2, db.gols1, db.gols2)
-        map[key].total += pts
-        if (pts === 3) map[key].exatos++
+    let html = ''
+    JOGOS_BRASIL.forEach(j => {
+      const db          = dbMap[j.id] || {}
+      const enc         = db.status === 'encerrado'
+      const palpsJogo   = palpites.filter(p => p.jogo_id === j.id)
+      const pot         = palpsJogo.length * 10
+
+      let ganh = []
+      if (enc) {
+        ganh = palpsJogo.filter(p => p.gols1 === db.gols1 && p.gols2 === db.gols2)
+        ganh.forEach(g => {
+          const key = g.nome.toLowerCase()
+          if (!acertosMap[key]) acertosMap[key] = { nome: g.nome, dept: g.dept, acertos: 0 }
+          acertosMap[key].acertos++
+        })
       }
+      const premioEach = ganh.length > 0 ? Math.floor(pot / ganh.length) : 0
+
+      html += `<div class="bolao-card ${enc ? 'bolao-enc' : 'bolao-pend'}">
+        <div class="bolao-card-header">
+          <div class="bolao-teams">${j.time1.flag} ${j.time1.nome} × ${j.time2.nome} ${j.time2.flag}</div>
+          <span class="badge ${enc ? 'badge-green' : 'badge-dim'}">${enc ? 'Encerrado' : 'Aguardando'}</span>
+        </div>
+        <div class="bolao-meta">${j.data} · ${j.fase}</div>
+        ${enc ? `<div class="bolao-resultado">Resultado oficial: <strong>${db.gols1} × ${db.gols2}</strong></div>` : ''}
+        <div class="bolao-stats">
+          <div class="bolao-stat">
+            <span>${palpsJogo.length}</span><small>Palpites</small>
+          </div>
+          <div class="bolao-stat bolao-stat-gold">
+            <span>R$${pot.toLocaleString('pt-BR')},00</span><small>Prêmio</small>
+          </div>
+          ${enc ? `<div class="bolao-stat ${ganh.length > 0 ? 'bolao-stat-green' : ''}">
+            <span>${ganh.length > 0 ? ganh.length : '—'}</span>
+            <small>${ganh.length === 1 ? 'Ganhador' : ganh.length > 1 ? 'Ganhadores' : 'Sem acerto'}</small>
+          </div>` : ''}
+        </div>
+        ${enc && ganh.length > 0 ? `
+          <div class="bolao-winners">
+            <div class="bolao-winners-names">🏆 ${ganh.map(g => g.nome).join(' · ')}</div>
+            <div class="bolao-winners-prize">R$${premioEach.toLocaleString('pt-BR')},00${ganh.length > 1 ? ' cada' : ''}</div>
+          </div>` : enc ? `
+          <div class="bolao-no-winner">Ninguém acertou o placar exato — sem ganhador nesta rodada</div>` : `
+          <div class="bolao-pending-msg">⏳ Faça seu palpite antes do jogo começar!</div>`
+        }
+      </div>`
     })
 
-    const ranking = Object.values(map).sort((a, b) => b.total - a.total || b.exatos - a.exatos)
+    el.innerHTML = html
 
-    if (!ranking.length) {
-      el.innerHTML = emptyHTML('📊', 'Nenhum palpite ainda.')
-      prizeEl.innerHTML = `<div class="prize-banner prize-banner-neutral">
-        <div class="prize-pot">R$0,00</div>
-        <div class="prize-label">Premiação total · Nenhum palpite ainda</div>
-      </div>`
-      return
+    // ── Histórico de acertos (quem já ganhou algum bolão) ──
+    const leaderboard = Object.values(acertosMap).sort((a, b) => b.acertos - a.acertos)
+    if (leaderboard.length > 0) {
+      const cls = i => ['gold', 'silver', 'bronze'][i] ?? ''
+      ws.innerHTML = `
+        <div class="section-title" style="margin-top:32px;">Histórico de Acertos</div>
+        <div style="display:grid;gap:8px;">
+          ${leaderboard.map((r, i) => `
+          <div class="ranking-row">
+            <div class="ranking-pos ${cls(i)}">${i + 1}</div>
+            <div>
+              <div class="ranking-name">${r.nome}</div>
+              <div class="ranking-dept">${r.dept}</div>
+            </div>
+            <div class="ranking-col" style="color:var(--gold);font-weight:700;font-size:16px;" colspan="3">
+              ⭐ ${r.acertos} placar${r.acertos > 1 ? 'es' : ''} exato${r.acertos > 1 ? 's' : ''}
+            </div>
+          </div>`).join('')}
+        </div>`
     }
-
-    // ── Calcula quem ganha o prêmio ──
-    // Ganha quem tem mais placares exatos (3 pts). Em caso de empate em exatos,
-    // desempata por pontuação total. Se ainda empatar, divide o prêmio.
-    const topExatos = ranking[0].exatos
-    const topTotal  = ranking[0].total
-    const vencedores = topExatos > 0
-      ? ranking.filter(r => r.exatos === topExatos && r.total === topTotal)
-      : []
-    const premioEach = vencedores.length > 0
-      ? Math.floor(totalPot / vencedores.length)
-      : totalPot
-    const todoEncerrado = jogosEncerrados === totalJogos
-
-    // ── Banner de prêmio ──
-    if (todoEncerrado && vencedores.length > 0) {
-      prizeEl.innerHTML = `<div class="prize-banner prize-banner-winner">
-        <div class="prize-pot">R$${totalPot.toLocaleString('pt-BR')},00</div>
-        <div class="prize-label">🏆 Bolão encerrado · ${vencedores.length > 1 ? `${vencedores.length} ganhadores dividem o prêmio` : 'Ganhador único'}</div>
-        ${vencedores.length > 1 ? `<div class="prize-split">R$${premioEach.toLocaleString('pt-BR')},00 cada · ${vencedores.map(v => v.nome).join(' e ')}</div>` : ''}
-      </div>`
-    } else if (topTotal > 0) {
-      prizeEl.innerHTML = `<div class="prize-banner prize-banner-live">
-        <div class="prize-pot">R$${totalPot.toLocaleString('pt-BR')},00</div>
-        <div class="prize-label">💰 Prêmio em jogo · ${jogosEncerrados}/${totalJogos} jogos encerrados</div>
-        <div class="prize-split">${vencedores.length > 0
-          ? `${vencedores.length > 1 ? `${vencedores.length} líderes empatados · R$${premioEach.toLocaleString('pt-BR')},00 cada se mantiver` : `Líder atual levaria R$${totalPot.toLocaleString('pt-BR')},00`}`
-          : 'Ninguém acertou placar exato ainda'
-        }</div>
-      </div>`
-    } else {
-      prizeEl.innerHTML = `<div class="prize-banner prize-banner-neutral">
-        <div class="prize-pot">R$${totalPot.toLocaleString('pt-BR')},00</div>
-        <div class="prize-label">💰 Prêmio em jogo · Aguardando resultados</div>
-      </div>`
-    }
-
-    const cls = i => ['gold', 'silver', 'bronze'][i] ?? ''
-    el.innerHTML = ranking.map((r, i) => {
-      const isVencedor = todoEncerrado && vencedores.some(v => v.nome.toLowerCase() === r.nome.toLowerCase())
-      return `
-      <div class="ranking-row ${isVencedor ? 'ranking-row-winner' : ''}">
-        <div class="ranking-pos ${cls(i)}">${i + 1}</div>
-        <div>
-          <div class="ranking-name">${r.nome}${isVencedor ? ' 🏆' : ''}</div>
-          <div class="ranking-dept">${r.dept}</div>
-        </div>
-        <div class="ranking-col">${r.palpites}</div>
-        <div class="ranking-col" style="color:var(--gold);font-weight:700;font-size:17px;">${r.total}</div>
-        <div class="ranking-col">⭐ ${r.exatos}</div>
-      </div>`
-    }).join('')
-
-    document.getElementById('winner-section').innerHTML = ''
   } catch (e) {
     el.innerHTML = emptyHTML('⚠️', e.message)
   }
@@ -543,29 +535,41 @@ async function reabrirJogo(jogoId) {
 
 async function verGanhador(jogoId) {
   try {
-    const [[db], todosPalpites, palpsJogo] = await Promise.all([
+    const [[db], palpsJogo] = await Promise.all([
       sb(`jogos?jogo_id=eq.${jogoId}`),
-      sb('palpites?select=id'),
       sb(`palpites?jogo_id=eq.${jogoId}`),
     ])
     if (!db || db.status !== 'encerrado') { toast('Salve o resultado primeiro.', 'error'); return }
 
-    const j         = JOGOS_BRASIL.find(x => x.id === jogoId)
-    const totalPot  = todosPalpites.length * 10
-    const exatos    = palpsJogo.filter(p => p.gols1 === db.gols1 && p.gols2 === db.gols2)
-    const ws        = document.getElementById('winner-section')
+    const j        = JOGOS_BRASIL.find(x => x.id === jogoId)
+    // prêmio = palpites DESTE jogo × R$10 (cada jogo é um bolão independente)
+    const pot      = palpsJogo.length * 10
+    const exatos   = palpsJogo.filter(p => p.gols1 === db.gols1 && p.gols2 === db.gols2)
+    const premio   = exatos.length > 0 ? Math.floor(pot / exatos.length) : 0
+    const ws       = document.getElementById('winner-section')
 
-    const potHTML = `<p style="margin-top:14px;color:var(--text-dim);font-size:13px;">
-      💰 Prêmio total do bolão: <strong style="color:var(--gold);">R$${totalPot.toLocaleString('pt-BR')},00</strong>
-      ${exatos.length > 1 ? `· R$${Math.floor(totalPot / exatos.length).toLocaleString('pt-BR')},00 por pessoa` : ''}
-    </p>`
+    const potHTML = `<div style="margin-top:16px;display:flex;gap:20px;justify-content:center;flex-wrap:wrap;">
+      <div style="text-align:center;">
+        <div style="font-family:'Barlow Condensed';font-size:26px;font-weight:800;color:var(--gold);">R$${pot.toLocaleString('pt-BR')},00</div>
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Prêmio do bolão</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-family:'Barlow Condensed';font-size:26px;font-weight:800;color:var(--text-dim);">${palpsJogo.length}</div>
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Participantes</div>
+      </div>
+      ${exatos.length > 0 ? `<div style="text-align:center;">
+        <div style="font-family:'Barlow Condensed';font-size:26px;font-weight:800;color:var(--green-bright);">R$${premio.toLocaleString('pt-BR')},00</div>
+        <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;">Por ganhador</div>
+      </div>` : ''}
+    </div>`
 
-    if (exatos.length) {
+    if (exatos.length > 0) {
       ws.innerHTML = `<div class="winner-banner">
         <span class="winner-banner-icon">🏆</span>
         <div class="winner-name">${exatos.map(p => p.nome).join(' & ')}</div>
         <p style="margin-top:10px;color:var(--text-dim);">
           Acertou o placar exato: <strong>${j.time1.flag} ${db.gols1} × ${db.gols2} ${j.time2.flag}</strong>
+          ${exatos.length > 1 ? `<br><span style="font-size:13px;">${exatos.length} ganhadores dividem o prêmio igualmente</span>` : ''}
         </p>
         ${potHTML}
       </div>`
@@ -573,9 +577,8 @@ async function verGanhador(jogoId) {
     } else {
       ws.innerHTML = `<div class="winner-banner" style="border-color:var(--border);">
         <span class="winner-banner-icon">😅</span>
-        <div class="winner-name" style="color:var(--text-dim);font-size:24px;">Ninguém acertou o placar exato</div>
-        <p style="margin-top:10px;color:var(--text-muted);">Placar real: <strong>${db.gols1} × ${db.gols2}</strong></p>
-        <p style="margin-top:8px;color:var(--text-muted);font-size:13px;">O prêmio continua acumulado para o próximo jogo.</p>
+        <div class="winner-name" style="color:var(--text-dim);font-size:28px;">Ninguém acertou</div>
+        <p style="margin-top:10px;color:var(--text-muted);">Placar real: <strong>${db.gols1} × ${db.gols2}</strong> — sem ganhador nesta rodada</p>
         ${potHTML}
       </div>`
     }

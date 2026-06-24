@@ -27,7 +27,7 @@
       <button class="active" onclick="goPage('tabela')">Tabela</button>
       <button onclick="goPage('palpitar')">Palpitar</button>
       <button onclick="goPage('meus')">Meus Palpites</button>
-      <button onclick="goPage('ranking')">Ranking</button>
+      <button onclick="goPage('ranking')">Bolões</button>
       <button onclick="goPage('adm')">ADM</button>
     </nav>
   </div>
@@ -130,19 +130,11 @@
     <div id="meus-palpites-list"></div>
   </div>
 
-  <!-- RANKING -->
+  <!-- RANKING / BOLÕES -->
   <div id="page-ranking" class="page">
-    <div class="section-title">Ranking Geral</div>
-    <div id="ranking-prize"></div>
-    <div class="ranking-head">
-      <span>#</span>
-      <span style="text-align:left;">Participante</span>
-      <span>Palpites</span>
-      <span>Pontos</span>
-      <span>Exatos</span>
-    </div>
+    <div class="section-title">Bolões & Resultados</div>
     <div id="ranking-list">
-      <div class="loading"><div class="spinner"></div> Calculando ranking…</div>
+      <div class="loading"><div class="spinner"></div> Carregando…</div>
     </div>
     <div id="winner-section"></div>
   </div>
@@ -188,7 +180,7 @@
   </button>
   <button class="bnav-btn" data-page="ranking" onclick="goPage('ranking')">
     <span class="bnav-icon">🏆</span>
-    <span class="bnav-label">Ranking</span>
+    <span class="bnav-label">Bolões</span>
   </button>
   <button class="bnav-btn" data-page="adm" onclick="goPage('adm')">
     <span class="bnav-icon">⚙️</span>

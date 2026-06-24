@@ -213,18 +213,33 @@ select option { background: var(--surface); }
 .adm-score-row input { width: 70px; text-align: center; font-family: 'Barlow Condensed', sans-serif; font-size: 28px; font-weight: 800; padding: 6px; color: var(--gold); }
 .adm-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
 
-/* ── PRIZE BANNER ── */
-.prize-banner {
-  border-radius: var(--radius); padding: 18px 20px; margin-bottom: 18px;
-  text-align: center;
+/* ── BOLÃO CARDS (página Bolões & Resultados) ── */
+.bolao-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 16px 20px; margin-bottom: 12px;
 }
-.prize-banner-neutral { background: rgba(242,166,20,.07); border: 1px solid rgba(242,166,20,.2); }
-.prize-banner-live    { background: rgba(242,166,20,.1);  border: 1px solid rgba(242,166,20,.35); }
-.prize-banner-winner  { background: linear-gradient(135deg,#0A2010,#071525); border: 2px solid var(--gold); }
-.prize-pot   { font-family: 'Barlow Condensed', sans-serif; font-size: 42px; font-weight: 800; color: var(--gold); line-height: 1; }
-.prize-label { font-size: 12px; color: var(--text-dim); margin-top: 4px; font-weight: 500; }
-.prize-split { font-size: 13px; color: var(--green-bright); margin-top: 6px; font-weight: 600; }
-.ranking-row-winner { border-color: var(--gold) !important; background: rgba(242,166,20,.06) !important; }
+.bolao-enc  { border-left: 3px solid var(--green); }
+.bolao-pend { border-left: 3px solid var(--text-muted); }
+.bolao-card-header { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+.bolao-teams { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 700; flex: 1; }
+.bolao-meta  { font-size: 11px; color: var(--text-muted); margin-bottom: 10px; }
+.bolao-resultado { font-size: 13px; color: var(--text-dim); margin-bottom: 10px; }
+.bolao-resultado strong { font-family: 'Barlow Condensed'; font-size: 22px; font-weight: 800; color: var(--gold); letter-spacing: 4px; }
+.bolao-stats { display: flex; gap: 20px; margin-bottom: 12px; flex-wrap: wrap; }
+.bolao-stat { display: flex; flex-direction: column; gap: 2px; }
+.bolao-stat span  { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 800; color: var(--text); line-height: 1; }
+.bolao-stat small { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+.bolao-stat-gold span  { color: var(--gold); }
+.bolao-stat-green span { color: var(--green-bright); }
+.bolao-winners {
+  background: rgba(242,166,20,.08); border: 1px solid rgba(242,166,20,.25);
+  border-radius: var(--radius-sm); padding: 10px 14px;
+  display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;
+}
+.bolao-winners-names { font-weight: 600; font-size: 14px; }
+.bolao-winners-prize { font-family: 'Barlow Condensed', sans-serif; font-size: 24px; font-weight: 800; color: var(--gold); }
+.bolao-no-winner  { font-size: 13px; color: var(--text-muted); font-style: italic; padding: 4px 0; }
+.bolao-pending-msg{ font-size: 13px; color: var(--text-dim); padding: 4px 0; }
 
 /* ── WINNER ── */
 .winner-banner { background: linear-gradient(135deg, #0A2010 0%, #071525 100%); border: 2px solid var(--gold); border-radius: 16px; padding: 32px; text-align: center; margin-top: 20px; }

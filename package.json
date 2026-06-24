@@ -1,0 +1,13 @@
+{
+  "name": "bolao-general-carros",
+  "version": "1.0.0",
+  "description": "Bolão Copa 2026 - General Carros",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

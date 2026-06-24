@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bolão Copa 2026 · General Carros</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo-mark">🇧🇷 Bolão 2026</div>
+    <div class="logo-sub">General Carros</div>
+    <div class="db-status">
+      <div class="db-dot" id="db-dot"></div>
+      <span id="db-label">Conectando…</span>
+    </div>
+    <nav class="top-nav">
+      <button class="active" onclick="goPage('tabela')">Tabela</button>
+      <button onclick="goPage('palpitar')">Palpitar</button>
+      <button onclick="goPage('meus')">Meus Palpites</button>
+      <button onclick="goPage('ranking')">Ranking</button>
+      <button onclick="goPage('adm')">ADM</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- TABELA -->
+  <div id="page-tabela" class="page active">
+    <div class="hero">
+      <div class="hero-label">Copa do Mundo FIFA 2026 · Grupo C</div>
+      <h1>Bolão <span>Brasil 🇧🇷</span></h1>
+      <p>Acompanhe os jogos da seleção, faça seus palpites e concorra ao prêmio. R$10,00 por palpite — quanto mais, maiores as chances.</p>
+      <div class="hero-stats">
+        <div><div class="hero-stat-val" id="stat-palpites">—</div><div class="hero-stat-label">Palpites</div></div>
+        <div><div class="hero-stat-val" id="stat-participantes">—</div><div class="hero-stat-label">Participantes</div></div>
+        <div><div class="hero-stat-val" id="stat-premio">—</div><div class="hero-stat-label">Premiação</div></div>
+        <div><div class="hero-stat-val" id="stat-enc">—</div><div class="hero-stat-label">Jogos Enc.</div></div>
+      </div>
+    </div>
+    <div class="section-title">Classificação — Grupo C</div>
+    <div class="card" style="margin-bottom:28px;overflow-x:auto;">
+      <table class="grupo-table" id="tabela-grupo">
+        <tr><td><div class="loading"><div class="spinner"></div> Carregando…</div></td></tr>
+      </table>
+    </div>
+    <div class="section-title">Jogos do Brasil</div>
+    <div class="jogos-grid" id="jogos-container">
+      <div class="loading"><div class="spinner"></div> Carregando jogos…</div>
+    </div>
+  </div>
+
+  <!-- PALPITAR -->
+  <div id="page-palpitar" class="page">
+    <div class="section-title">Fazer Palpite</div>
+    <div class="card palpitar-card">
+      <div class="palpite-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Seu Nome</label>
+            <input type="text" id="p-nome" placeholder="Ex: João Silva" autocomplete="off"
+              oninput="saveNomeLocal()">
+          </div>
+          <div class="form-group">
+            <label>Setor / Departamento</label>
+            <input type="text" id="p-dept" placeholder="Ex: Vendas" autocomplete="off"
+              oninput="saveDeptLocal()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Jogo</label>
+          <select id="p-jogo" onchange="updatePalpiteLabels()"></select>
+        </div>
+
+        <div class="palpite-placar">
+          <div class="palpite-team">
+            <div class="palpite-team-flag" id="p-flag1">🇧🇷</div>
+            <div class="palpite-team-label" id="p-label1">Brasil</div>
+            <div class="score-stepper">
+              <button class="stepper-btn stepper-minus" onclick="adjustScore('p-gols1',-1)" aria-label="Diminuir">−</button>
+              <input class="score-input" type="number" id="p-gols1" value="0" min="0" max="20" readonly>
+              <button class="stepper-btn stepper-plus" onclick="adjustScore('p-gols1',1)" aria-label="Aumentar">+</button>
+            </div>
+          </div>
+          <div class="vs-sep">×</div>
+          <div class="palpite-team">
+            <div class="palpite-team-flag" id="p-flag2">—</div>
+            <div class="palpite-team-label" id="p-label2">Adversário</div>
+            <div class="score-stepper">
+              <button class="stepper-btn stepper-minus" onclick="adjustScore('p-gols2',-1)" aria-label="Diminuir">−</button>
+              <input class="score-input" type="number" id="p-gols2" value="0" min="0" max="20" readonly>
+              <button class="stepper-btn stepper-plus" onclick="adjustScore('p-gols2',1)" aria-label="Aumentar">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-box">
+          💡 <strong>R$10,00 por palpite.</strong> Múltiplos palpites acumulam chances — o investimento é proporcional. Palpites salvos <strong>não podem ser alterados</strong>.
+        </div>
+        <button class="btn btn-primary btn-full" id="btn-salvar-palpite" onclick="salvarPalpite()">
+          ✓ Confirmar Palpite — R$10,00
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEUS PALPITES -->
+  <div id="page-meus" class="page">
+    <div class="section-title">Meus Palpites</div>
+    <div class="card" style="max-width:420px;margin-bottom:20px;">
+      <div class="form-group">
+        <label>Seu Nome</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="filtro-nome" placeholder="Digite seu nome"
+            onkeydown="if(event.key==='Enter')filtrarPalpites()">
+          <button class="btn btn-ghost" onclick="filtrarPalpites()">Buscar</button>
+        </div>
+      </div>
+    </div>
+    <div id="meus-palpites-list"></div>
+  </div>
+
+  <!-- RANKING -->
+  <div id="page-ranking" class="page">
+    <div class="section-title">Ranking Geral</div>
+    <div class="ranking-head">
+      <span>#</span>
+      <span style="text-align:left;">Participante</span>
+      <span>Palpites</span>
+      <span>Pontos</span>
+      <span>Exatos</span>
+    </div>
+    <div id="ranking-list">
+      <div class="loading"><div class="spinner"></div> Calculando ranking…</div>
+    </div>
+    <div id="winner-section"></div>
+  </div>
+
+  <!-- ADM -->
+  <div id="page-adm" class="page">
+    <div class="section-title">Administração</div>
+    <div class="card" style="max-width:360px;margin-bottom:24px;" id="adm-login-box">
+      <div class="form-group" style="margin-bottom:12px;">
+        <label>Senha ADM</label>
+        <input type="password" id="adm-senha" placeholder="••••••••"
+          onkeydown="if(event.key==='Enter')loginAdm()">
+      </div>
+      <button class="btn btn-primary" onclick="loginAdm()">Entrar como ADM</button>
+    </div>
+    <div id="adm-panel" style="display:none;">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="admTab('resultados')">Lançar Resultados</button>
+        <button class="tab-btn" onclick="admTab('palpites')">Todos os Palpites</button>
+        <button class="tab-btn" onclick="admTab('grupo')">Grupo C</button>
+      </div>
+      <div id="adm-resultados"></div>
+      <div id="adm-palpites" style="display:none;"></div>
+      <div id="adm-grupo" style="display:none;"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- NAV INFERIOR (mobile) -->
+<nav class="bottom-nav" id="bottom-nav">
+  <button class="bnav-btn active" data-page="tabela" onclick="goPage('tabela')">
+    <span class="bnav-icon">⚽</span>
+    <span class="bnav-label">Tabela</span>
+  </button>
+  <button class="bnav-btn" data-page="palpitar" onclick="goPage('palpitar')">
+    <span class="bnav-icon">✏️</span>
+    <span class="bnav-label">Palpitar</span>
+  </button>
+  <button class="bnav-btn" data-page="meus" onclick="goPage('meus')">
+    <span class="bnav-icon">📋</span>
+    <span class="bnav-label">Meus</span>
+  </button>
+  <button class="bnav-btn" data-page="ranking" onclick="goPage('ranking')">
+    <span class="bnav-icon">🏆</span>
+    <span class="bnav-label">Ranking</span>
+  </button>
+  <button class="bnav-btn" data-page="adm" onclick="goPage('adm')">
+    <span class="bnav-icon">⚙️</span>
+    <span class="bnav-label">ADM</span>
+  </button>
+</nav>
+
+<div id="toast"></div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h2 id="modal-title">Confirmar</h2>
+    <p id="modal-msg"></p>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="modal-ok">Confirmar</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

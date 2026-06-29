@@ -248,9 +248,12 @@ async function renderPalpitarSelect() {
   const sel = document.getElementById('p-jogo')
   sel.innerHTML = '<option>Carregando…</option>'
   try {
-    const dbJogos = await sb('jogos?select=jogo_id,status,time2_nome,time2_flag')
+    const dbJogos = await sb('jogos?select=jogo_id,status')
     const dbMap   = Object.fromEntries(dbJogos.map(j => [j.jogo_id, j]))
-    _dbJogosMap   = { ..._dbJogosMap, ...dbMap }
+    // merge sem sobrescrever time2_nome/time2_flag já carregados pelo renderTabela
+    Object.entries(dbMap).forEach(([k, v]) => {
+      _dbJogosMap[k] = { ...(_dbJogosMap[k] || {}), ...v }
+    })
     const disp    = JOGOS_BRASIL.filter(j => !['encerrado','em_andamento'].includes(dbMap[j.id]?.status))
 
     if (!disp.length) {

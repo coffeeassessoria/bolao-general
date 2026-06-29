@@ -664,10 +664,10 @@ async function salvarResultado(jogoId) {
   const g1 = parseInt(document.getElementById(`adm-g1-${jogoId}`).value)
   const g2 = parseInt(document.getElementById(`adm-g2-${jogoId}`).value)
   try {
-    await sb(`jogos?jogo_id=eq.${jogoId}`, {
-      method: 'PATCH',
-      body: { gols1: g1, gols2: g2, status: 'encerrado' },
-      prefer: 'return=minimal',
+    await sb('jogos', {
+      method: 'POST',
+      body: { jogo_id: jogoId, gols1: g1, gols2: g2, status: 'encerrado' },
+      prefer: 'return=minimal,resolution=merge-duplicates',
     })
     toast('✅ Resultado salvo!', 'success')
     await renderAdmResultados()
@@ -703,10 +703,10 @@ async function iniciarJogo(jogoId) {
      • Painel público será <strong>liberado</strong>`,
     async () => {
       try {
-        await sb(`jogos?jogo_id=eq.${jogoId}`, {
-          method: 'PATCH',
-          body: { status: 'em_andamento' },
-          prefer: 'return=minimal',
+        await sb('jogos', {
+          method: 'POST',
+          body: { jogo_id: jogoId, status: 'em_andamento' },
+          prefer: 'return=minimal,resolution=merge-duplicates',
         })
         toast('🔴 Jogo iniciado! Painel liberado.', 'success')
         await renderAdmResultados()
@@ -723,10 +723,10 @@ async function salvarAdversario(jogoId) {
   const flag = document.getElementById(`adm-t2flag-${jogoId}`).value.trim()
   if (!nome) { toast('Informe o nome do adversário.', 'error'); return }
   try {
-    await sb(`jogos?jogo_id=eq.${jogoId}`, {
-      method: 'PATCH',
-      body: { time2_nome: nome, time2_flag: flag || '🏳️' },
-      prefer: 'return=minimal',
+    await sb('jogos', {
+      method: 'POST',
+      body: { jogo_id: jogoId, time2_nome: nome, time2_flag: flag || '🏳️' },
+      prefer: 'return=minimal,resolution=merge-duplicates',
     })
     toast(`✅ Adversário atualizado: ${flag} ${nome}`, 'success')
     await renderAdmResultados()

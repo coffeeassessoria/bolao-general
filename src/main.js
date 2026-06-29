@@ -245,19 +245,21 @@ async function renderGrupo() {
 
 // ═══════════════ PALPITAR ═══════════════
 async function renderPalpitarSelect() {
-  const sel = document.getElementById('p-jogo')
+  const sel   = document.getElementById('p-jogo')
+  const retry = document.getElementById('palpitar-retry')
   sel.innerHTML = '<option>Carregando…</option>'
+  if (retry) retry.style.display = 'none'
   try {
     const dbJogos = await sb('jogos?select=jogo_id,status')
-    const dbMap   = Object.fromEntries(dbJogos.map(j => [j.jogo_id, j]))
-    // merge sem sobrescrever time2_nome/time2_flag já carregados pelo renderTabela
+    const rows    = Array.isArray(dbJogos) ? dbJogos : []
+    const dbMap   = Object.fromEntries(rows.map(j => [j.jogo_id, j]))
     Object.entries(dbMap).forEach(([k, v]) => {
       _dbJogosMap[k] = { ...(_dbJogosMap[k] || {}), ...v }
     })
-    const disp    = JOGOS_BRASIL.filter(j => !['encerrado','em_andamento'].includes(dbMap[j.id]?.status))
+    const disp = JOGOS_BRASIL.filter(j => !['encerrado','em_andamento'].includes(dbMap[j.id]?.status))
 
     if (!disp.length) {
-      sel.innerHTML = '<option>Nenhum jogo disponível</option>'
+      sel.innerHTML = '<option>Nenhum jogo disponível no momento</option>'
       return
     }
     sel.innerHTML = ''
@@ -270,7 +272,10 @@ async function renderPalpitarSelect() {
     })
     updatePalpiteLabels()
   } catch (e) {
-    sel.innerHTML = '<option>Erro ao carregar</option>'
+    console.error('[Bolão] renderPalpitarSelect falhou:', e.message)
+    sel.innerHTML = '<option>— Selecione um jogo —</option>'
+    if (retry) retry.style.display = 'block'
+    toast('Erro ao carregar jogos. Tente novamente.', 'error')
   }
 }
 

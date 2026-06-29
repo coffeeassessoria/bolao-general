@@ -34,9 +34,20 @@ window.admTogglePago       = admTogglePago
 window.copiarPix           = copiarPix
 window.openMenu            = openMenu
 window.closeMenu           = closeMenu
+window.salvarAdversario    = salvarAdversario
 
 const ADM_SENHA = 'generalcarros2026'
-let admLogado = false
+let admLogado   = false
+let _dbJogosMap = {}   // cache dos dados de jogos do banco
+
+// retorna os dados do time2 com override do banco (para adversários das fases finais)
+function jogoTime2(j) {
+  const db = _dbJogosMap[j.id] || {}
+  return {
+    nome: db.time2_nome || j.time2.nome,
+    flag: db.time2_flag || j.time2.flag,
+  }
+}
 
 // ═══════════════ BOOT ═══════════════
 window.addEventListener('DOMContentLoaded', async () => {
@@ -169,12 +180,14 @@ async function renderTabela() {
   try {
     const dbJogos = await sb('jogos?order=id')
     const dbMap   = Object.fromEntries(dbJogos.map(j => [j.jogo_id, j]))
+    _dbJogosMap   = dbMap
 
     let faseAtual = ''
     let html = ''
     JOGOS_BRASIL.forEach(j => {
-      const db  = dbMap[j.id] || {}
-      const enc = db.status === 'encerrado'
+      const db   = dbMap[j.id] || {}
+      const enc  = db.status === 'encerrado'
+      const adv  = jogoTime2(j)
       if (j.fase !== faseAtual) {
         faseAtual = j.fase
         html += `<div class="fase-header">${j.fase}</div>`
@@ -192,8 +205,8 @@ async function renderTabela() {
             <span class="badge ${enc ? 'badge-green' : 'badge-dim'}">${enc ? 'Encerrado' : 'Agendado'}</span>
           </div>
           <div class="team-block">
-            <div class="team-flag">${j.time2.flag}</div>
-            <div class="team-name ${j.time2.brasil ? 'brasil' : ''}">${j.time2.nome}</div>
+            <div class="team-flag">${adv.flag}</div>
+            <div class="team-name ${j.time2.brasil ? 'brasil' : ''}">${adv.nome}</div>
           </div>
         </div>`
     })
@@ -233,8 +246,9 @@ async function renderPalpitarSelect() {
   const sel = document.getElementById('p-jogo')
   sel.innerHTML = '<option>Carregando…</option>'
   try {
-    const dbJogos = await sb('jogos?select=jogo_id,status')
+    const dbJogos = await sb('jogos?select=jogo_id,status,time2_nome,time2_flag')
     const dbMap   = Object.fromEntries(dbJogos.map(j => [j.jogo_id, j]))
+    _dbJogosMap   = { ..._dbJogosMap, ...dbMap }
     const disp    = JOGOS_BRASIL.filter(j => dbMap[j.id]?.status !== 'encerrado')
 
     if (!disp.length) {
@@ -243,9 +257,10 @@ async function renderPalpitarSelect() {
     }
     sel.innerHTML = ''
     disp.forEach(j => {
+      const adv = jogoTime2(j)
       const opt = document.createElement('option')
       opt.value = j.id
-      opt.textContent = `${j.data} — ${j.time1.nome} × ${j.time2.nome}`
+      opt.textContent = `${j.data} — ${j.time1.nome} × ${adv.nome}`
       sel.appendChild(opt)
     })
     updatePalpiteLabels()
@@ -258,11 +273,11 @@ function updatePalpiteLabels() {
   const jogoId = document.getElementById('p-jogo').value
   const j = JOGOS_BRASIL.find(x => x.id === jogoId)
   if (!j) return
+  const adv = jogoTime2(j)
   document.getElementById('p-flag1').textContent  = j.time1.flag
   document.getElementById('p-label1').textContent = j.time1.nome
-  document.getElementById('p-flag2').textContent  = j.time2.flag
-  document.getElementById('p-label2').textContent = j.time2.nome
-  // reset placar ao trocar jogo
+  document.getElementById('p-flag2').textContent  = adv.flag
+  document.getElementById('p-label2').textContent = adv.nome
   document.getElementById('p-gols1').value = 0
   document.getElementById('p-gols2').value = 0
 }
@@ -572,22 +587,38 @@ async function renderAdmResultados() {
   try {
     const dbJogos = await sb('jogos?order=id')
     const dbMap   = Object.fromEntries(dbJogos.map(j => [j.jogo_id, j]))
+    _dbJogosMap   = dbMap
 
     el.innerHTML = JOGOS_BRASIL.map(j => {
-      const db  = dbMap[j.id] || {}
-      const enc = db.status === 'encerrado'
+      const db         = dbMap[j.id] || {}
+      const enc        = db.status === 'encerrado'
+      const adv        = jogoTime2(j)
+      const isKnockout = !j.fase.includes('Grupos')
+
       return `<div class="adm-game-row">
         <div class="adm-game-info">
-          <div class="adm-game-teams">${j.time1.flag} ${j.time1.nome} × ${j.time2.nome} ${j.time2.flag}</div>
+          <div class="adm-game-teams">${j.time1.flag} ${j.time1.nome} × ${adv.nome} ${adv.flag}</div>
           <span class="badge ${enc ? 'badge-green' : 'badge-dim'}">${enc ? 'Encerrado' : 'Agendado'}</span>
           <span style="font-size:12px;color:var(--text-muted);">${j.data} · ${j.fase}</span>
         </div>
+        ${isKnockout ? `
+        <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--border);margin-top:10px;">
+          <div>
+            <label style="font-size:10px;display:block;margin-bottom:3px;color:var(--text-muted);">BANDEIRA</label>
+            <input type="text" id="adm-t2flag-${j.id}" value="${adv.flag !== '🏳️' ? adv.flag : ''}" placeholder="🇯🇵" style="width:62px;text-align:center;font-size:22px;padding:6px;">
+          </div>
+          <div style="flex:1;min-width:150px;">
+            <label style="font-size:10px;display:block;margin-bottom:3px;color:var(--text-muted);">ADVERSÁRIO</label>
+            <input type="text" id="adm-t2nome-${j.id}" value="${adv.nome !== 'A Definir' ? adv.nome : ''}" placeholder="Ex: França">
+          </div>
+          <button class="btn btn-primary" style="height:42px;" onclick="salvarAdversario('${j.id}')">✅ Salvar Adversário</button>
+        </div>` : ''}
         <div class="adm-score-row">
           <span>${j.time1.flag}</span>
           <input type="number" id="adm-g1-${j.id}" value="${db.gols1 ?? 0}" min="0" max="30">
           <span style="font-family:'Barlow Condensed';font-size:20px;color:var(--text-muted);">×</span>
           <input type="number" id="adm-g2-${j.id}" value="${db.gols2 ?? 0}" min="0" max="30">
-          <span>${j.time2.flag}</span>
+          <span>${adv.flag}</span>
         </div>
         <div class="adm-actions">
           <button class="btn btn-green"  onclick="salvarResultado('${j.id}')">💾 Salvar Resultado</button>
@@ -627,6 +658,24 @@ async function reabrirJogo(jogoId) {
     })
     toast('Jogo reaberto.', 'success')
     await renderAdmResultados()
+  } catch (e) {
+    toast('Erro: ' + e.message, 'error')
+  }
+}
+
+async function salvarAdversario(jogoId) {
+  const nome = document.getElementById(`adm-t2nome-${jogoId}`).value.trim()
+  const flag = document.getElementById(`adm-t2flag-${jogoId}`).value.trim()
+  if (!nome) { toast('Informe o nome do adversário.', 'error'); return }
+  try {
+    await sb(`jogos?jogo_id=eq.${jogoId}`, {
+      method: 'PATCH',
+      body: { time2_nome: nome, time2_flag: flag || '🏳️' },
+      prefer: 'return=minimal',
+    })
+    toast(`✅ Adversário atualizado: ${flag} ${nome}`, 'success')
+    await renderAdmResultados()
+    renderTabela()
   } catch (e) {
     toast('Erro: ' + e.message, 'error')
   }

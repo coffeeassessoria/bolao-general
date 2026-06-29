@@ -35,6 +35,7 @@ window.copiarPix           = copiarPix
 window.openMenu            = openMenu
 window.closeMenu           = closeMenu
 window.salvarAdversario    = salvarAdversario
+window.iniciarJogo         = iniciarJogo
 
 const ADM_SENHA = 'generalcarros2026'
 let admLogado   = false
@@ -187,6 +188,7 @@ async function renderTabela() {
     JOGOS_BRASIL.forEach(j => {
       const db   = dbMap[j.id] || {}
       const enc  = db.status === 'encerrado'
+      const live = db.status === 'em_andamento'
       const adv  = jogoTime2(j)
       if (j.fase !== faseAtual) {
         faseAtual = j.fase
@@ -202,7 +204,7 @@ async function renderTabela() {
             <div class="placar-num ${enc ? '' : 'pending'}">${enc ? `${db.gols1} × ${db.gols2}` : '×'}</div>
             <div class="jogo-data">${j.data} · ${j.horario}</div>
             <div class="jogo-local">${j.local}</div>
-            <span class="badge ${enc ? 'badge-green' : 'badge-dim'}">${enc ? 'Encerrado' : 'Agendado'}</span>
+            <span class="badge ${enc ? 'badge-green' : live ? 'badge-live' : 'badge-dim'}">${enc ? 'Encerrado' : live ? '🔴 Em andamento' : 'Agendado'}</span>
           </div>
           <div class="team-block">
             <div class="team-flag">${adv.flag}</div>
@@ -249,7 +251,7 @@ async function renderPalpitarSelect() {
     const dbJogos = await sb('jogos?select=jogo_id,status,time2_nome,time2_flag')
     const dbMap   = Object.fromEntries(dbJogos.map(j => [j.jogo_id, j]))
     _dbJogosMap   = { ..._dbJogosMap, ...dbMap }
-    const disp    = JOGOS_BRASIL.filter(j => dbMap[j.id]?.status !== 'encerrado')
+    const disp    = JOGOS_BRASIL.filter(j => !['encerrado','em_andamento'].includes(dbMap[j.id]?.status))
 
     if (!disp.length) {
       sel.innerHTML = '<option>Nenhum jogo disponível</option>'
@@ -300,7 +302,8 @@ async function salvarPalpite() {
   if (isNaN(g1) || isNaN(g2)) { toast('Preencha o placar.', 'error'); return }
 
   const [dbJogo] = await sb(`jogos?jogo_id=eq.${jogoId}&select=status`)
-  if (dbJogo?.status === 'encerrado') { toast('Jogo já encerrado.', 'error'); return }
+  if (dbJogo?.status === 'encerrado')    { toast('Jogo já encerrado.', 'error'); return }
+  if (dbJogo?.status === 'em_andamento') { toast('Este jogo já começou. Palpites encerrados.', 'error'); return }
 
   const j = JOGOS_BRASIL.find(x => x.id === jogoId)
 
@@ -361,31 +364,46 @@ async function renderPainel() {
     ])
     const dbMap = Object.fromEntries(dbJogos.map(j => [j.jogo_id, j]))
 
+    // apenas palpites de jogos já iniciados ficam visíveis no painel público
+    const visiveis   = palpites.filter(p => ['encerrado','em_andamento'].includes(dbMap[p.jogo_id]?.status))
+    const bloqueados = palpites.length - visiveis.length
+
     if (!palpites.length) {
       el.innerHTML = emptyHTML('📋', 'Nenhum palpite registrado ainda.')
       return
     }
 
     let html = `<div class="painel-total">
-      ${palpites.length} palpite${palpites.length > 1 ? 's' : ''} registrado${palpites.length > 1 ? 's' : ''}
-    </div><div style="display:grid;gap:8px;">`
+      ${visiveis.length} palpite${visiveis.length !== 1 ? 's' : ''} visível${visiveis.length !== 1 ? 'is' : ''}
+      ${bloqueados > 0 ? `· <span style="color:var(--text-muted);">🔒 ${bloqueados} oculto${bloqueados > 1 ? 's' : ''} até o início do jogo</span>` : ''}
+    </div>`
 
-    palpites.forEach(p => {
+    if (!visiveis.length) {
+      html += `<div class="info-box" style="text-align:center;padding:24px;">
+        🔒 <strong>Os palpites serão revelados quando o jogo começar.</strong><br>
+        <span style="font-size:12px;color:var(--text-muted);margin-top:6px;display:block;">Nenhum jogo iniciado ainda.</span>
+      </div>`
+      el.innerHTML = html
+      return
+    }
+
+    html += `<div style="display:grid;gap:8px;">`
+    visiveis.forEach(p => {
       const j   = JOGOS_BRASIL.find(x => x.id === p.jogo_id)
       const db  = dbMap[p.jogo_id] || {}
       const enc = db.status === 'encerrado'
-      let statusHtml = `<span class="badge badge-dim">Aguardando</span>`
+      const adv = jogoTime2(j || { id: p.jogo_id, time2: { nome: p.jogo_id, flag: '' } })
+      let statusHtml = `<span class="badge badge-live">🔴 Em jogo</span>`
       if (enc) {
         const exato = p.gols1 === db.gols1 && p.gols2 === db.gols2
         statusHtml = exato
           ? `<span class="badge badge-gold">🏆 Acertou!</span>`
           : `<span class="badge" style="background:rgba(192,57,43,.12);color:#e74c3c;">Errou</span>`
       }
-
       html += `<div class="painel-card">
         <div class="painel-card-info">
           <div class="painel-card-nome">${p.nome}</div>
-          <div class="painel-card-meta">${p.dept} · ${j ? `${j.time1.flag} ${j.time1.nome} × ${j.time2.nome} ${j.time2.flag}` : p.jogo_id}</div>
+          <div class="painel-card-meta">${p.dept} · ${j ? `${j.time1.flag} ${j.time1.nome} × ${adv.nome} ${adv.flag}` : p.jogo_id}</div>
         </div>
         <div class="painel-card-right">
           <div class="painel-card-score">${p.gols1} × ${p.gols2}</div>
@@ -592,13 +610,14 @@ async function renderAdmResultados() {
     el.innerHTML = JOGOS_BRASIL.map(j => {
       const db         = dbMap[j.id] || {}
       const enc        = db.status === 'encerrado'
+      const live       = db.status === 'em_andamento'
       const adv        = jogoTime2(j)
       const isKnockout = !j.fase.includes('Grupos')
 
       return `<div class="adm-game-row">
         <div class="adm-game-info">
           <div class="adm-game-teams">${j.time1.flag} ${j.time1.nome} × ${adv.nome} ${adv.flag}</div>
-          <span class="badge ${enc ? 'badge-green' : 'badge-dim'}">${enc ? 'Encerrado' : 'Agendado'}</span>
+          <span class="badge ${enc ? 'badge-green' : live ? 'badge-live' : 'badge-dim'}">${enc ? 'Encerrado' : live ? '🔴 Em andamento' : 'Agendado'}</span>
           <span style="font-size:12px;color:var(--text-muted);">${j.data} · ${j.fase}</span>
         </div>
         ${isKnockout ? `
@@ -621,9 +640,10 @@ async function renderAdmResultados() {
           <span>${adv.flag}</span>
         </div>
         <div class="adm-actions">
-          <button class="btn btn-green"  onclick="salvarResultado('${j.id}')">💾 Salvar Resultado</button>
+          ${!enc && !live ? `<button class="btn btn-danger" onclick="iniciarJogo('${j.id}')">🔴 Iniciar Jogo</button>` : ''}
+          ${!enc ? `<button class="btn btn-green" onclick="salvarResultado('${j.id}')">💾 Salvar Resultado</button>` : ''}
           <button class="btn btn-primary" onclick="verGanhador('${j.id}')">🏆 Ver Ganhador</button>
-          ${enc ? `<button class="btn btn-ghost" onclick="reabrirJogo('${j.id}')">↩ Reabrir</button>` : ''}
+          ${enc || live ? `<button class="btn btn-ghost" onclick="reabrirJogo('${j.id}')">↩ Reabrir</button>` : ''}
         </div>
       </div>`
     }).join('')
@@ -656,11 +676,38 @@ async function reabrirJogo(jogoId) {
       body: { status: 'agendado', gols1: null, gols2: null },
       prefer: 'return=minimal',
     })
-    toast('Jogo reaberto.', 'success')
+    toast('Jogo reaberto para palpites.', 'success')
     await renderAdmResultados()
+    renderTabela()
   } catch (e) {
     toast('Erro: ' + e.message, 'error')
   }
+}
+
+async function iniciarJogo(jogoId) {
+  const j = JOGOS_BRASIL.find(x => x.id === jogoId)
+  const adv = jogoTime2(j)
+  openModal(
+    '🔴 Iniciar Jogo',
+    `Confirma o início de <strong>${j.time1.nome} × ${adv.nome}</strong>?<br><br>
+     Ao iniciar:<br>
+     • Palpites serão <strong>bloqueados</strong><br>
+     • Painel público será <strong>liberado</strong>`,
+    async () => {
+      try {
+        await sb(`jogos?jogo_id=eq.${jogoId}`, {
+          method: 'PATCH',
+          body: { status: 'em_andamento' },
+          prefer: 'return=minimal',
+        })
+        toast('🔴 Jogo iniciado! Painel liberado.', 'success')
+        await renderAdmResultados()
+        renderTabela()
+      } catch (e) {
+        toast('Erro: ' + e.message, 'error')
+      }
+    }
+  )
 }
 
 async function salvarAdversario(jogoId) {

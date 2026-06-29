@@ -94,6 +94,8 @@ main { max-width: 1000px; margin: 0 auto; padding: 28px 20px 64px; }
 .badge-green { background: rgba(37,176,86,.15); color: var(--green-bright); }
 .badge-gold  { background: rgba(242,166,20,.15); color: var(--gold); }
 .badge-dim   { background: rgba(255,255,255,.05); color: var(--text-muted); }
+.badge-live  { background: rgba(231,76,60,.2); color: #e74c3c; animation: pulse-live 1.5s ease-in-out infinite; }
+@keyframes pulse-live { 0%,100% { opacity:1; } 50% { opacity:.6; } }
 
 /* ── GRUPO TABLE ── */
 .grupo-table { width: 100%; border-collapse: collapse; }
